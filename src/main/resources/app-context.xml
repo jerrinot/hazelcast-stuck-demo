@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:hz="http://www.hazelcast.com/schema/spring"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+	   					   http://www.springframework.org/schema/beans/spring-beans.xsd
+	   					   http://www.springframework.org/schema/context
+                           http://www.springframework.org/schema/context/spring-context.xsd
+	   					   http://www.hazelcast.com/schema/spring
+	   					   http://www.hazelcast.com/schema/spring/hazelcast-spring-3.1.xsd">
+
+    <context:annotation-config />
+
+    <bean id="executor" class="com.hazelcast.hibernate.app.Executor" />
+
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath:/app.properties</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="dataSource" class="com.jolbox.bonecp.BoneCPDataSource" destroy-method="close">
+        <property name="driverClass" value="${jdbc.driverClassName}" />
+        <property name="jdbcUrl" value="${jdbc.url}" />
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+        <property name="idleConnectionTestPeriodInSeconds" value="90"/>
+        <property name="idleMaxAgeInSeconds" value="240"/>
+        <property name="maxConnectionsPerPartition" value="40"/>
+        <property name="minConnectionsPerPartition" value="0"/>
+        <property name="partitionCount" value="2"/>
+        <property name="acquireIncrement" value="5"/>
+        <property name="statementsCacheSize" value="100"/>
+        <property name="releaseHelperThreads" value="3"/>
+    </bean>
+
+    <bean id="namingStrategy" class="org.hibernate.cfg.ImprovedNamingStrategy"/>
+
+    <bean id="sessionFactory"  scope="singleton"
+          class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+        <property name="packagesToScan" value="com.hazelcast.hibernate.entity" />
+        <property name="cacheRegionFactory" ref="regionFactory" />
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">${hibernate.dialect}</prop>
+                <prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+                <prop key="hibernate.jdbc.batch_size">0</prop>
+                <prop key="hibernate.query.substitutions">true 'Y', false 'N'</prop>
+                <prop key="hibernate.hbm2ddl.auto">update</prop>
+                <prop key="hibernate.cache.use_second_level_cache">true</prop>
+                <prop key="hibernate.cache.use_query_cache">true</prop>
+                <prop key="hibernate.cache.use_minimal_puts">true</prop>
+            </props>
+        </property>
+        <property name="namingStrategy" ref="namingStrategy" />
+    </bean>
+
+    <bean id="transactionManager"
+          class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+        <property name="sessionFactory" ref="sessionFactory" />
+    </bean>
+
+    <bean id="executorService" class="org.springframework.scheduling.concurrent.ThreadPoolExecutorFactoryBean">
+        <property name="corePoolSize" value="20" />
+        <property name="threadNamePrefix" value="test-" />
+        <property name="maxPoolSize" value="20" />
+    </bean>
+
+    <hz:hazelcast id="mycluster">
+        <hz:config>
+            <hz:group name="demo" password="demo" />
+            <hz:network port="5701" port-auto-increment="true">
+                <hz:join>
+                    <hz:tcp-ip enabled="true">
+                        <hz:interface>127.0.0.1</hz:interface>
+                    </hz:tcp-ip>
+                </hz:join>
+            </hz:network>
+        </hz:config>
+    </hz:hazelcast>
+
+    <hz:hibernate-region-factory id="regionFactory" instance-ref="mycluster" />
+
+</beans>
