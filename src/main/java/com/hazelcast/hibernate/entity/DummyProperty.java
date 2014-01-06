@@ -33,6 +33,7 @@ public class DummyProperty implements DataSerializable {
 
     @Id
     @Column(name = "uid")
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private long id;
 
     @Column(name = "version")
