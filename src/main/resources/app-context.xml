@@ -40,10 +40,9 @@
     <bean id="namingStrategy" class="org.hibernate.cfg.ImprovedNamingStrategy"/>
 
     <bean id="sessionFactory"  scope="singleton"
-          class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean">
+          class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
         <property name="dataSource" ref="dataSource" />
         <property name="packagesToScan" value="com.hazelcast.hibernate.entity" />
-        <property name="cacheRegionFactory" ref="regionFactory" />
         <property name="hibernateProperties">
             <props>
                 <prop key="hibernate.dialect">${hibernate.dialect}</prop>
@@ -54,13 +53,14 @@
                 <prop key="hibernate.cache.use_second_level_cache">true</prop>
                 <prop key="hibernate.cache.use_query_cache">true</prop>
                 <prop key="hibernate.cache.use_minimal_puts">true</prop>
+                <prop key="hibernate.cache.region.factory_class">com.hazelcast.hibernate.HazelcastCacheRegionFactory</prop>
             </props>
         </property>
         <property name="namingStrategy" ref="namingStrategy" />
     </bean>
 
     <bean id="transactionManager"
-          class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+          class="org.springframework.orm.hibernate4.HibernateTransactionManager">
         <property name="sessionFactory" ref="sessionFactory" />
     </bean>
 
@@ -69,20 +69,5 @@
         <property name="threadNamePrefix" value="test-" />
         <property name="maxPoolSize" value="20" />
     </bean>
-
-    <hz:hazelcast id="mycluster">
-        <hz:config>
-            <hz:group name="demo" password="demo" />
-            <hz:network port="5701" port-auto-increment="true">
-                <hz:join>
-                    <hz:tcp-ip enabled="true">
-                        <hz:interface>127.0.0.1</hz:interface>
-                    </hz:tcp-ip>
-                </hz:join>
-            </hz:network>
-        </hz:config>
-    </hz:hazelcast>
-
-    <hz:hibernate-region-factory id="regionFactory" instance-ref="mycluster" />
 
 </beans>
