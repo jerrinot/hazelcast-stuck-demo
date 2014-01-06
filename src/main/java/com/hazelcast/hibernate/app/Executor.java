@@ -90,7 +90,8 @@ public class Executor {
                 for (int i = begin; i < end; i++) {
                     DummyEntity e = new DummyEntity((long) i, "dummy:" + i, i * 123456d, new Date());
                     session.save(e);
-                    for (int j = 0; j < random.nextInt(maxChildCount); j++) {
+                    int childCount = random.nextInt(maxChildCount)+1;
+                    for (int j = 0; j < childCount; j++) {
                         DummyProperty p = new DummyProperty("key:" + j, e);
                         session.save(p);
                     }
